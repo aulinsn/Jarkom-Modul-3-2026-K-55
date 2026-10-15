@@ -929,7 +929,6 @@ grep -E "^lease|starts|ends|hardware" /var/lib/dhcp/dhcpd.leases | tail -n 20
 
 ### Gangguan
 
-- Setelah restart, IP statis tetap karena dibaca dari `/etc/network/interfaces`, begitu pula seluruh file di `/root`.
 - Paket `isc-dhcp-relay` (jichi) dan `isc-dhcp-server` (tengen) dapat hilang setelah restart, sehingga dipulihkan dengan `/root/startup.sh` yang memasang ulang paket dan memulihkan konfigurasi dari cadangan.
 - Setelah restart, link Network 4 sempat belum stabil (ping tengen ke jichi sempat loss 60%) sehingga client gagal `udhcpc`. Ping ulang sampai 0% loss, restart bersih relay (`killall dhcrelay; service isc-dhcp-relay start`), lalu minta lease ulang.
 
@@ -940,7 +939,7 @@ grep -E "^lease|starts|ends|hardware" /var/lib/dhcp/dhcpd.leases | tail -n 20
 | 1 | jichi | `/root/startup.sh`, lalu cek `ps aux \| grep dhcrelay` |
 | 2 | tengen | `/root/startup.sh`, lalu cek `service isc-dhcp-server status` |
 | 3 | tengen | `ping -c 10 10.91.4.1` sampai 0% loss |
-| 4 | jichi | `killall dhcrelay; service isc-dhcp-relay start` bila perlu |
+| 4 | jichi | `killall dhcrelay; service isc-dhcp-relay start` kalau perlu |
 | 5 | client | `udhcpc -i eth0` |
 
 ---
