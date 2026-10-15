@@ -19,8 +19,6 @@ Image: `ardhptr21/debinet:latest` untuk jichi, tengen, utahime, shoko, gojo, get
 | 3 | `10.91.3.0/24` | `10.91.3.1` | Client Divisi B (DHCP relay) |
 | 4 | `10.91.4.0/24` | `10.91.4.1` | Data Center |
 
-Soal tidak menentukan nomor host, sehingga IP host dipilih sendiri dan dipakai konsisten di semua soal.
-
 | Network | Host | IP | Gateway |
 |---|---|---|---|
 | 1 | utahime | 10.91.1.2 | 10.91.1.1 |
@@ -36,7 +34,7 @@ Soal tidak menentukan nomor host, sehingga IP host dipilih sendiri dan dipakai k
 | 4 | inumaki | 10.91.4.9 | 10.91.4.1 |
 | 4 | tengen | 10.91.4.10 | 10.91.4.1 |
 
-Pada awalnya tengen memakai `10.91.4.8`. Karena soal 2 mewajibkan DHCP server berada di `[PREFIX].4.10`, IP yaga, inumaki, dan tengen disesuaikan menjadi seperti tabel di atas.
+Awalnya tengen memakai `10.91.4.8`. Karena soal 2 mewajibkan DHCP server berada di `[PREFIX].4.10`, IP yaga, inumaki, dan tengen disesuaikan menjadi seperti di tabel.
 
 ### Tabel Pemetaan Kabel
 
