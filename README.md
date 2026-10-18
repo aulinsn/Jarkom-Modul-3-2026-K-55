@@ -1013,8 +1013,8 @@ Terakhir lakukan restart pada service BIND9 `service BIND9 restart`
 
 Untuk memvalidasi, lakukan `dig <ip-utahime> jujutsu.K55.com` pada node utahime dan `dig <ip-shoko> jujutsu.K55.com` dengan menggunakan salah satu client (misalkan itadori)
 
-<foto>
-<foto>
+<img width="1479" height="655" alt="image_soal11" src="https://github.com/user-attachments/assets/99f0ff15-187e-45f4-a264-b03c27482a27" />
+<img width="1068" height="681" alt="image_soal11-2" src="https://github.com/user-attachments/assets/da1703e6-8001-4ad6-99c0-e23116adee30" />
 
 ### Soal 12
 
@@ -1099,13 +1099,9 @@ nameserver 10.91.1.2
 ```
 
 Untuk melakukan validasi PTR, lakukan `dig 10.91.1.4`
-<foto>
-
 Untuk melakukan validasi CNAME, lakukan `dig jujutsu.K55.com`
-<foto>
-
 Untuk merlakukan validasi DNS forwarde, lakukan `ping -c 3 google.com`
-<foto>
+<img width="1445" height="1006" alt="image_soal12" src="https://github.com/user-attachments/assets/f0c96182-ba18-4639-a0fc-39d296e97608" />
 
 ### Soal 13
 
@@ -1164,6 +1160,9 @@ CHANGE MASTER TO
 
 START SLAVE;
 ```
+Untuk melakukan validasi, lakukan input data pada `DB master` kemudian cek apakah hasilnya juga bisa dilihat pada `DB slave`
+<img width="1145" height="1019" alt="image_soal13-1" src="https://github.com/user-attachments/assets/a4db9b5b-3e20-49c9-8068-1f08a7796cd4" />
+<img width="773" height="293" alt="image_soal13-2" src="https://github.com/user-attachments/assets/701daf46-2f61-43d8-8aa0-f742736f15a0" />
 
 ### Soal 15
 
@@ -1227,4 +1226,5 @@ Untuk melakukan validasi, pilih salah satu client kemudian lakukan `apk update` 
 ```
 for i in $(seq 1 20); do curl -s http://10.91.4.2 | grep "Worker Hostname:"; done
 ```
+<img width="890" height="77" alt="image_soal15" src="https://github.com/user-attachments/assets/776a9c56-188d-492d-8f50-9d38afa1e954" />
 
