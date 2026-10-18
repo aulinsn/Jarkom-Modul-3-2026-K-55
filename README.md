@@ -944,3 +944,287 @@ grep -E "^lease|starts|ends|hardware" /var/lib/dhcp/dhcpd.leases | tail -n 20
 
 ---
 
+### Soal 11
+
+Utahime dan Shoko ditugaskan membangun sistem penamaan domain resmi agar seluruh pos tidak perlu menghafal alamat IP mentah. Konfigurasikan BIND9 pada utahime sebagai DNS Master dan shoko sebagai DNS Slave untuk mengelola domain jujutsu.<xxxx>.com. Atur SOA record, NS delegasi untuk kedua server, dan terapkan allow-transfer dari Master ke Slave. Pastikan file zona berhasil tersinkronisasi otomatis ke shoko saat nomor serial di utahime dinaikkan, lalu buktikan dengan melakukan query dig ke kedua server dari salah satu client
+
+Pada soal ini, kita diminta untuk membuat DNS master pada node `utahime` dan DNS slave pada node `shoko` dengan melakukan konfigurasi pada BIND9.
+Pada node `utahime`, lakukan `apt update` agar bisa menginstall `apt install BIND9 -y`. Masukkan command berikut `ln -s /etc/init.d/named /etc/init.d/bind9 2>/dev/null || true` agar bisa melakukan restart pada service BIND9.
+Kemudian buka file `/etc/bind/named.conf.local` dan masukkan script beirkut
+
+```
+zone "jujutsu.K55.com" {
+    type master;
+    notify yes;
+    also-notify { 10.91.1.3; };
+    allow-transfer { 10.91.1.3; };
+    file "/etc/bind/jarkom/jujutsu.K55.com";
+};
+```
+
+Buat folder baru dengan directory `mkdir -p /etc/bind/jarkom` dan masuk ke file `/etc/bind/zone.template` serta masukkan config berikut
+
+```
+$TTL    604800          ; Waktu cache default (detik)
+@       IN      SOA     localhost. root.localhost. (
+                        2025100401 ; Serial (format YYYYMMDDXX)
+                        604800     ; Refresh (1 minggu)
+                        86400      ; Retry (1 hari)
+                        2419200    ; Expire (4 minggu)
+                        604800 )   ; Negative Cache TTL
+;
+
+@       IN      NS      localhost.
+@       IN      A       127.0.0.1
+```
+
+Copy file `/etc/bind/zone.template` ke dalam folder `/etc/bind/jarkom/jujutsu.K55.com` Kemudian buka file `/etc/bind/jarkom/jujutsu.K55.com` dan masukkan config berikut
+
+```
+$TTL    604800
+@       IN      SOA     jujutsu.K55.com. root.jujutsu.K55.com. (
+                        2025100401 ; Serial
+                        604800     ; Refresh
+                        86400      ; Retry
+                        2419200    ; Expire
+                        604800 )   ; Negative Cache TTL
+;
+@       IN      NS      utahime.jujutsu.K55.com.
+@       IN      NS      shoko.jujutsu.K55.com.
+utahime IN      A       10.91.1.2
+shoko   IN      A       10.91.1.3
+@       IN      A       10.91.1.2
+```
+
+Setelah semua config selesai dimasukkan, lakukan restart pada service BIND9 `service BIND9 restart`
+
+Pada node shoko, lakukan `apt update` dan install `apt-get install bind9 -y` setelah itu masukkan command `ln -s /etc/init.d/named /etc/init.d/bind9 2>/dev/null || true` agar bisa melakukan restart pada service BIND9.
+Buka file `/etc/bind/named.conf.local` dan masukkan config berikut
+
+```
+zone "jujutsu.K55.com" {
+    type slave;
+    masters { 10.91.1.2; };
+    file "/var/lib/bind/jujutsu.K55.com";
+};
+```
+
+Terakhir lakukan restart pada service BIND9 `service BIND9 restart`
+
+Untuk memvalidasi, lakukan `dig <ip-utahime> jujutsu.K55.com` pada node utahime dan `dig <ip-shoko> jujutsu.K55.com` dengan menggunakan salah satu client (misalkan itadori)
+
+<foto>
+<foto>
+
+### Soal 12
+
+Peta domain harus memetakan pintu masuk utama dan tetap bisa mencari alamat di luar kawasan Shibuya. Pada utahime, buat A record jujutsu.<xxxx>.com yang mengarah ke gojo, serta CNAME www yang merujuk ke domain utama tersebut. Buat pula Reverse DNS (zona PTR) untuk melacak IP gojo kembali ke domain resminya, dan aktifkan fitur DNS Forwarder pada BIND9 mengarah ke IP gateway internet (192.168.122.1). Uji dari client dengan dig untuk mengecek CNAME, PTR, dan buktikan client tetap bisa melakukan ping ke domain internet seperti google.com.
+
+Pada soal ini, diminta untuk membuat `A record` dari jujutsu.K55.com yang mengarah ke node gojo dan `CNAME` www yang mengarah ke jujutsu.K55.com. Lalu kita diminta untuk membuat `Reverse DNS` yang mengarah kembali ke jujutsu.K55.com dan aktifkan fitur `DNS forwarder` pada BIND9 mengakses internet
+
+Pertama pada node utahime, buka file `/etc/bind/jarkom/jujutsu.K55.com` dan masukkan config berikut
+
+```
+$TTL    604800
+@       IN      SOA     jujutsu.K55.com. root.jujutsu.K55.com. (
+                        2025100401 ; Serial
+                        604800     ; Refresh
+                        86400      ; Retry
+                        2419200    ; Expire
+                        604800 )   ; Negative Cache TTL
+;
+@       IN      NS      utahime.jujutsu.K55.com.
+@       IN      NS      shoko.jujutsu.K55.com.
+utahime IN      A       10.91.1.2
+shoko   IN      A       10.91.1.3
+@       IN      A       10.91.1.2
+jujutsu.K55.com IN  A   10.91.1.4
+www     IN      CNAME   jujutsu.K55.com.
+```
+
+Setelah itu, buka file `/etc/bind/named.conf.local` dan masukkan config beirkut
+
+```
+zone "jujutsu.K55.com" {
+    type master;
+    notify yes;
+    also-notify { 10.91.1.3; };
+    allow-transfer { 10.91.1.3; };
+    file "/etc/bind/jarkom/jujutsu.K55.com";
+};
+
+zone "1.91.10.in-addr.arpa" {
+  type master;
+  file "/etc/bind/jarkom/1.91.10.in-addr.arpa";
+};
+```
+
+Lalu buka file `/etc/bind/jarkom/1.91.10.in-addr.arpa` dan masukkan config berikut
+
+```
+$TTL    604800
+@       IN      SOA     jujutsu.K55.com. root.jujutsu.K55.com. (
+                        2025100401
+                        604800
+                        86400
+                        2419200
+                        604800 )
+1.91.10.in-addr.arpa.   IN      NS      jujutsu.K55.com.
+2                       IN      PTR     jujutsu.K55.com.
+```
+
+Terakhir, buka file `/etc/bind/named.conf.options` dan masukkan config berikut
+
+```
+options {
+        directory "/var/cache/bind";
+
+        forwarders {
+                192.168.122.1;
+        };
+
+        dnssec-validation no;
+        allow-query { any; };
+        auth-nxdomain no;
+        listen-on-v6 { any; };
+};
+```
+
+Setelah itu lakukan restart service BIND9 pada node utahime `service bind9 restart`
+
+Pada client, buka file `/etc/resolv.conf ` dan masukkan config berikut
+
+```
+nameserver 10.91.1.2
+```
+
+Untuk melakukan validasi PTR, lakukan `dig 10.91.1.4`
+<foto>
+
+Untuk melakukan validasi CNAME, lakukan `dig jujutsu.K55.com`
+<foto>
+
+Untuk merlakukan validasi DNS forwarde, lakukan `ping -c 3 google.com`
+<foto>
+
+### Soal 13
+
+Kepala Sekolah Yaga dan Inumaki mendirikan database terpusat yang redundan agar log aktivitas kutukan tetap aman tersimpan. Konfigurasikan MariaDB pada yaga sebagai DB-Master dan inumaki sebagai DB-Slave. Buat database db*shibuya*<xxxx> beserta tabel request_logs di Master, aktifkan binary logging (log-bin, server-id), lalu hubungkan inumaki sebagai Slave yang menyalin data secara realtime dengan CHANGE MASTER TO. Berikan hak akses remote bagi seluruh node di Network 4, lalu buktikan replikasi berhasil dengan memasukkan data baru di Master dan memeriksa hasilnya di Slave.
+
+Pada soal ini, kita diminta untuk membuat database dengan ketentuan Yaga sebagai `DB-master` dan Inumaki sebagai `DB-slave`. Kemudian hubungkan Inumaki agar bisa menyalin data secara realtime dengan `CHANGE MASTER TO` serta berikan hak akses di network 4.
+
+Pada node Yaga, lakukan `apt update` dan install `apt-get install -y mariadb-server mariadb-client`. Lakukan start pada service mariadb `service mariadb start`
+
+Masukkan command berikut
+
+```
+sed -i 's/bind-address\s*=\s*127.0.0.1/bind-address= 0.0.0.0/' /etc/mysql/mariadb.conf.d/50-server.cnf
+```
+
+kemudian lakukan restart pada mariadb `service mariadb restart`
+Buka mariadb untuk membuat database `mariadb -u root` dan masukkan kode sql berikut
+
+```
+CREATE DATABASE IF NOT EXISTS db_shibuya_K55;
+USE db_shibuya_K55;
+
+CREATE TABLE IF NOT EXISTS request_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    activity VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE USER IF NOT EXISTS 'kelompok'@'10.91.4.%' IDENTIFIED BY 'password_bebas';
+GRANT ALL PRIVILEGES ON db_shibuya_K55.* TO 'kelompok'@'10.91.4.%' IDENTIFIED BY 'password_bebas' WITH GRANT OPTION;
+
+CREATE USER IF NOT EXISTS 'replica_user'@'10.91.4.%' IDENTIFIED BY 'password_bebas';
+GRANT REPLICATION SLAVE ON *.* TO 'replica_user'@'10.91.4.%';
+
+FLUSH PRIVILEGES;
+SHOW MASTER STATUS;
+```
+
+Pada node Inumaki, lakukan `apt-get update` dan install `apt-get install -y mariadb-server mariadb-client`. Masukkan command berikut untuk melakukan cek `if ! grep -q "server-id" /etc/mysql/mariadb.conf.d/50-server.cnf; then cat /etc/mysql/mariadb.conf.d/50-server.cnf fi`. Jika file `/etc/mysql/mariadb.conf.d/50-server.cnf` terbuka, maka masukkan config berikut
+
+```
+[mysqld]
+server-id       = 2
+bind-address    = 0.0.0.0
+```
+
+Kemudian restart mariadb `service mariadb restart`. Kemudian buka mariadb `mariadb -u root -p` dna masukkan kode sql berikut
+
+```
+CHANGE MASTER TO
+    MASTER_HOST='10.91.4.8',
+    MASTER_USER='replica_user',
+    MASTER_PASSWORD='password_bebas',
+    MASTER_LOG_FILE='mysql-bind.000001',
+    MASTER_LOG_POS=329;
+
+START SLAVE;
+```
+
+### Soal 15
+
+Geto bertugas mengendalikan pembagian beban request API di internal Data Center agar server tidak tumbang bersamaan. Konfigurasikan Nginx pada geto sebagai Load Balancer internal dengan upstream api_cluster yang mengarahkan trafik ke nanami dan todo. Terapkan algoritma Weighted Round Robin dengan bobot 3:1, di mana nanami menerima porsi beban tiga kali lebih banyak daripada todo. Buktikan distribusi beban ini dengan melakukan loop request berulang kali ke geto dari jaringan lokal Data Center dan periksa rasio responnya.
+
+Pada soal ini kita diminta kita diminta untuk mengkonfigurasi `Nginx` pada node geto sebagai Load `Balancer` dengan metode Weighted Round Robin. Perbandingan yang digunakan adalah `3:1` di mana nanami mendapatkan porsi 3 kali lebih banyak dari todo.
+
+Pertama pada node geto, kita lakukan `apt-get update` dan install Nginx `apt-get install nginx -y`. Kemudian buka file `/etc/nginx/nginx.conf` dan masukkan config berikut
+
+```
+http {
+    ##
+    # Logging Settings
+    ##
+    log_format lb_log '$remote_addr - $remote_user [$time_local] '
+                      '"$request" $status $body_bytes_sent '
+                      'rt=$request_time uct="$upstream_connect_time" '
+                      'uht="$upstream_header_time" urt="$upstream_response_time" '
+                      'upstream=$upstream_addr realip=$http_x_real_ip';
+
+    access_log /var/log/nginx/access.log lb_log;
+}
+```
+
+```
+location / {
+    proxy_pass http://backend_cluster;
+
+    # Meneruskan header asli klien ke backend worker:
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+Kemudian buka file `/etc/nginx/sites-available/load-balancer.conf` dan masukkan config berikut
+
+```
+upstream backend_cluster {
+    server 10.91.4.5:80 weight=3;
+    server 10.91.4.6:80 weight=1;
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        proxy_pass http://backend_cluster;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Untuk melakukan validasi, pilih salah satu client kemudian lakukan `apk update` dan install `apk add curl apache2-utils lynx`. Setelah itu testing dengan menggunakan command
+
+```
+for i in $(seq 1 20); do curl -s http://10.91.4.2 | grep "Worker Hostname:"; done
+```
+
